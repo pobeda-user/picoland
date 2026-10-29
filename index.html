@@ -167,9 +167,7 @@
   </div>
 
   <header class="hero">
-    <div class="hero-banner" id="bannerContainer">
-      <!-- Сюда вставляется либо картинка, либо дефолтный баннер -->
-    </div>
+    <div class="hero-banner" id="bannerContainer"></div>
     <div class="hero__links">
       <a href="https://telegra.ph/PICO-FAQ-01-20" target="_blank">FAQ по PICO</a>
       <a href="https://www.youtube.com/@PicoLAND" target="_blank">YouTube</a>
@@ -189,7 +187,7 @@
   <main class="grid" id="grid"></main>
 
   <footer>
-    <div>PicoLAND / <span class="accent">v2.5</span> ✦ прототип</div>
+    <div>PicoLAND / <span class="accent">v2.6</span> ✦ прототип</div>
     <div>Показано <span class="accent" id="shown">0</span></div>
   </footer>
 </div>
@@ -207,26 +205,24 @@
   </div>
 </div>
 
-<!-- MODAL: Настройки (Визуальный конструктор + баннер) -->
+<!-- MODAL: Настройки -->
 <div class="modal" id="settingsModal">
   <div class="modal__box modal__box--large">
     <h2>Настройки <button class="modal__close" data-close="settingsModal">&times;</button></h2>
 
-    <!-- БЛОК БАННЕРА -->
     <div class="field" style="border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 16px;">
       <label>Картинка баннера на главной</label>
       <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
         <input type="file" id="bannerFile" accept="image/*" style="flex: 1;">
-        <button type="button" class="btn btn--small btn--ghost" id="pasteBannerBtn" title="Вставить из буфера (Ctrl+V)">📋 Вставить</button>
+        <button type="button" class="btn btn--small btn--ghost" id="pasteBannerBtn">📋 Вставить</button>
       </div>
       <input type="url" id="bannerUrl" placeholder="...или вставить URL картинки" style="margin-bottom: 8px;">
       <img class="preview-img" id="bannerPreview" alt="Превью баннера">
       <button type="button" class="btn btn--small btn--ghost" id="resetBannerBtn" style="margin-top: 8px;">Сбросить (вернуть стандартный)</button>
     </div>
 
-    <!-- БЛОК ИНСТРУКЦИИ -->
     <div style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 12px;">
-      <b>Инструкция по установке</b> — составляйте из блоков. Меняйте порядок кнопками <b>↑ / ↓</b>.
+      <b>Инструкция по установке</b> — составляйте из блоков.
     </div>
 
     <div id="builderContainer" style="margin-bottom: 16px;"></div>
@@ -263,7 +259,18 @@
       <div class="field"><label>Жанр (через запятую)</label><input type="text" id="fGenre" placeholder="Симулятор, Экшн"></div>
       <div class="field"><label>Мультиплеер</label><input type="text" id="fMultiplayer" placeholder="Не работает / Работает / До 4 игроков..."></div>
       <div class="field"><label>Ссылка на трейлер (YouTube)</label><input type="url" id="fTrailer" placeholder="https://youtube.com/watch?v=..."></div>
-      <div class="field"><label>Ссылка на скачивание (общая)</label><input type="url" id="fLink" placeholder="https://..."></div>
+      
+      <!-- ОБНОВЛЕННЫЙ БЛОК ССЫЛКИ И ЗАГРУЗКИ -->
+      <div class="field">
+        <label>Ссылка на скачивание (общая)</label>
+        <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+          <input type="url" id="fLink" placeholder="https://... или загрузите файл ниже" style="flex: 1;">
+          <button type="button" class="btn btn--small btn--ghost" id="uploadFileBtn" title="Загрузить файл на Google Диск">📤 Загрузить</button>
+        </div>
+        <input type="file" id="fFileUpload" accept=".apk,.zip,.rar,.7z,.obb" style="width: 100%; padding: 8px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; color: var(--text);">
+        <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 4px;">Можно загрузить APK, ZIP, RAR или OBB (до 50 МБ). После загрузки ссылка появится в поле выше.</div>
+      </div>
+
       <div class="field"><label>Ссылка Yandex</label><input type="url" id="fLinkYandex" placeholder="https://disk.yandex.ru/..."></div>
       <div class="field"><label>Ссылка Sber</label><input type="url" id="fLinkSber" placeholder="https://sberdisk.ru/..."></div>
       
@@ -271,9 +278,8 @@
         <label>Обложка игры</label>
         <div style="display: flex; gap: 8px; align-items: center;">
           <input type="file" id="fCoverFile" accept="image/*" style="flex: 1;">
-          <button type="button" class="btn btn--small btn--ghost" id="pasteCoverBtn" title="Вставить из буфера (Ctrl+V)">📋 Вставить</button>
+          <button type="button" class="btn btn--small btn--ghost" id="pasteCoverBtn">📋 Вставить</button>
         </div>
-        <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 4px;">Можно загрузить файл, вставить из буфера (Ctrl+V) или вставить URL ниже.</div>
       </div>
       <div class="field"><label>...или вставить URL картинки</label><input type="url" id="fCoverUrl" placeholder="https://.../cover.jpg"></div>
       <img class="preview-img" id="coverPreview" alt="Превью">
@@ -316,11 +322,13 @@
 
 <script>
   // ============================================================
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbxYI9PQLlPc6ZA7WK0XWxf1P15nMRaj0xaNGAauM7ZZxvsXWuWaVzTZmK1DVt-g-bkA/exec";
+  // НАСТРОЙКИ
+  // ============================================================
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbxYI9PQLlPc6ZA7WK0XWxf1P15nMRaj0xaNGAauM7ZZxvsXWuWaVzTZmK1DVt-g-bkA/exec"; // <-- ВСТАВЬТЕ ВАШ URL
 
   let games = [];
-  let bannerUrl = ""; // Картинка баннера с сервера
-  let pendingBanner = ""; // Временная картинка в настройках
+  let bannerUrl = "";
+  let pendingBanner = "";
   let isAdmin = false;
   let pendingCover = "";
   let userReactions = loadUserReactions();
@@ -390,9 +398,7 @@
   // ---------- API ----------
   async function apiLogin(u, p) {
     const body = new URLSearchParams();
-    body.append("action", "login");
-    body.append("login", u);
-    body.append("password", p);
+    body.append("action", "login"); body.append("login", u); body.append("password", p);
     const res = await fetch(GAS_URL, { method: "POST", body });
     return (await res.json()).success;
   }
@@ -402,37 +408,25 @@
   }
   async function apiSaveGame(gameData) {
     const body = new URLSearchParams();
-    body.append("action", "saveGame");
-    body.append("login", adminCreds.login);
-    body.append("password", adminCreds.password);
-    body.append("gameData", JSON.stringify(gameData));
+    body.append("action", "saveGame"); body.append("login", adminCreds.login); body.append("password", adminCreds.password); body.append("gameData", JSON.stringify(gameData));
     const res = await fetch(GAS_URL, { method: "POST", body });
     return await res.json();
   }
   async function apiDeleteGame(id) {
     const body = new URLSearchParams();
-    body.append("action", "deleteGame");
-    body.append("login", adminCreds.login);
-    body.append("password", adminCreds.password);
-    body.append("gameId", id);
+    body.append("action", "deleteGame"); body.append("login", adminCreds.login); body.append("password", adminCreds.password); body.append("gameId", id);
     const res = await fetch(GAS_URL, { method: "POST", body });
     return await res.json();
   }
   async function apiReact(gameId, emoji, userChoice) {
     const body = new URLSearchParams();
-    body.append("action", "react");
-    body.append("gameId", gameId);
-    body.append("emoji", emoji);
-    body.append("userChoice", userChoice || "");
+    body.append("action", "react"); body.append("gameId", gameId); body.append("emoji", emoji); body.append("userChoice", userChoice || "");
     const res = await fetch(GAS_URL, { method: "POST", body });
     return await res.json();
   }
   async function apiSaveBanner(url) {
     const body = new URLSearchParams();
-    body.append("action", "saveBanner");
-    body.append("login", adminCreds.login);
-    body.append("password", adminCreds.password);
-    body.append("bannerUrl", url);
+    body.append("action", "saveBanner"); body.append("login", adminCreds.login); body.append("password", adminCreds.password); body.append("bannerUrl", url);
     const res = await fetch(GAS_URL, { method: "POST", body });
     return await res.json();
   }
@@ -469,14 +463,9 @@
 
   adminBtn.addEventListener("click", () => {
     if (isAdmin) {
-      isAdmin = false;
-      adminCreds = {};
-      localStorage.removeItem("picoland_creds");
-      updateAdminUI();
+      isAdmin = false; adminCreds = {}; localStorage.removeItem("picoland_creds"); updateAdminUI();
     } else {
-      loginModal.classList.add("open");
-      loginError.classList.remove("visible");
-      loginForm.reset();
+      loginModal.classList.add("open"); loginError.classList.remove("visible"); loginForm.reset();
     }
   });
 
@@ -485,25 +474,16 @@
     const u = document.getElementById("loginUser").value.trim();
     const p = document.getElementById("loginPass").value;
     const btn = loginForm.querySelector(".btn");
-    btn.textContent = "Проверка...";
-    btn.disabled = true;
+    btn.textContent = "Проверка..."; btn.disabled = true;
     try {
       const success = await apiLogin(u, p);
       if (success) {
-        isAdmin = true;
-        adminCreds = { login: u, password: p };
+        isAdmin = true; adminCreds = { login: u, password: p };
         localStorage.setItem("picoland_creds", JSON.stringify(adminCreds));
-        loginModal.classList.remove("open");
-        updateAdminUI();
-      } else {
-        loginError.classList.add("visible");
-      }
-    } catch (err) {
-      alert("Ошибка сети.");
-    } finally {
-      btn.textContent = "Войти";
-      btn.disabled = false;
-    }
+        loginModal.classList.remove("open"); updateAdminUI();
+      } else { loginError.classList.add("visible"); }
+    } catch (err) { alert("Ошибка сети."); }
+    finally { btn.textContent = "Войти"; btn.disabled = false; }
   });
 
   // ---------- Модалки ----------
@@ -520,11 +500,9 @@
       const data = await apiGetGames();
       games = data.games || [];
       bannerUrl = data.banner || "";
-      renderBanner();
-      render(games);
+      renderBanner(); render(games);
     } catch (err) {
-      console.error(err);
-      grid.innerHTML = `<div class="empty"><p>Не удалось загрузить данные.</p></div>`;
+      console.error(err); grid.innerHTML = `<div class="empty"><p>Не удалось загрузить данные.</p></div>`;
     }
   }
 
@@ -535,37 +513,25 @@
     } else {
       grid.innerHTML = list.map(g => `
         <article class="card" data-view="${g.id}">
-          <div class="card__cover">
-            ${g.cover ? `<img src="${g.cover}" alt="${escapeHtml(g.title)}" onerror="this.parentElement.textContent='Нет обложки'">` : "Нет обложки"}
-          </div>
+          <div class="card__cover">${g.cover ? `<img src="${g.cover}" alt="${escapeHtml(g.title)}" onerror="this.parentElement.textContent='Нет обложки'">` : "Нет обложки"}</div>
           <div class="card__body">
             <div class="card__date">${formatDate(g.date)}</div>
             <h3 class="card__title">${escapeHtml(g.title)}</h3>
             <p class="card__desc">${escapeHtml(g.desc || "")}</p>
             ${g.multiplayer ? `<div class="card__mp"><strong>Мультиплеер:</strong> ${escapeHtml(g.multiplayer)}</div>` : ""}
-            <div class="card__tags">
-              ${(g.genre || "").split(",").map(t => t.trim()).filter(Boolean).map(t => `<span class="tag">${escapeHtml(t)}</span>`).join("")}
-            </div>
+            <div class="card__tags">${(g.genre || "").split(",").map(t => t.trim()).filter(Boolean).map(t => `<span class="tag">${escapeHtml(t)}</span>`).join("")}</div>
             <div class="card__actions">
               ${g.trailer ? `<a href="${escapeAttr(g.trailer)}" target="_blank" onclick="event.stopPropagation()">🎬 Трейлер</a>` : ""}
               ${g.link ? `<a href="${escapeAttr(g.link)}" target="_blank" onclick="event.stopPropagation()">⬇ Скачать</a>` : ""}
               ${g.linkYandex ? `<a href="${escapeAttr(g.linkYandex)}" target="_blank" onclick="event.stopPropagation()" style="color: #fc3f1d;">⬇ Скачать Яндекс</a>` : ""}
               ${g.linkSber ? `<a href="${escapeAttr(g.linkSber)}" target="_blank" onclick="event.stopPropagation()" style="color: #21a038;">⬇ Скачать Sber</a>` : ""}
             </div>
-            ${isAdmin ? `
-            <div class="card__actions">
-              <button class="edit" data-edit="${g.id}">✏ Редактировать</button>
-              <button class="delete" data-delete="${g.id}">🗑 Удалить</button>
-            </div>` : ""}
+            ${isAdmin ? `<div class="card__actions"><button class="edit" data-edit="${g.id}">✏ Редактировать</button><button class="delete" data-delete="${g.id}">🗑 Удалить</button></div>` : ""}
           </div>
-        </article>
-      `).join("");
+        </article>`).join("");
 
       grid.querySelectorAll("[data-view]").forEach(card => {
-        card.addEventListener("click", e => {
-          if (e.target.closest("a, button")) return;
-          openView(Number(card.dataset.view));
-        });
+        card.addEventListener("click", e => { if (e.target.closest("a, button")) return; openView(Number(card.dataset.view)); });
       });
       grid.querySelectorAll("[data-edit]").forEach(btn => {
         btn.addEventListener("click", e => { e.stopPropagation(); openEditor(Number(btn.dataset.edit)); });
@@ -620,17 +586,12 @@
     `;
     viewModal.classList.add("open");
 
-    viewContent.querySelector(".open-instruction").addEventListener("click", e => {
-      e.preventDefault();
-      openInstruction();
-    });
-
+    viewContent.querySelector(".open-instruction").addEventListener("click", e => { e.preventDefault(); openInstruction(); });
     viewContent.querySelectorAll('.reaction-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         const emoji = btn.dataset.emoji;
         const currentUserChoice = userReactions[id];
-        if (currentUserChoice === emoji) delete userReactions[id];
-        else userReactions[id] = emoji;
+        if (currentUserChoice === emoji) delete userReactions[id]; else userReactions[id] = emoji;
         saveUserReactions();
         try {
           const res = await apiReact(id, emoji, currentUserChoice);
@@ -650,13 +611,10 @@
     instructionModal.classList.add("open");
   }
 
-  // ---------- Настройки: Баннер + Инструкция ----------
+  // ---------- Настройки ----------
   function renderBuilder() {
     builderContainer.innerHTML = "";
-    if (!instructionBlocks.length) {
-      builderContainer.innerHTML = `<div style="color: var(--text-dim); font-size: 0.9rem;">Пока нет блоков.</div>`;
-      return;
-    }
+    if (!instructionBlocks.length) { builderContainer.innerHTML = `<div style="color: var(--text-dim); font-size: 0.9rem;">Пока нет блоков.</div>`; return; }
     instructionBlocks.forEach((block, index) => {
       const el = document.createElement("div");
       el.className = "builder-block";
@@ -675,27 +633,23 @@
             <button type="button" class="btn btn--small btn--ghost add-link-btn">🔗 Ссылка</button>
             <button type="button" class="btn btn--small btn--ghost add-bold-btn">Ж</button>
             <button type="button" class="btn btn--small btn--ghost add-italic-btn">К</button>
-          </div>
-        `;
+          </div>`;
         const ta = el.querySelector("textarea");
         ta.addEventListener("input", () => { block.content = ta.value; });
         el.querySelector(".add-link-btn").addEventListener("click", () => {
-          const url = prompt("URL:", "https://");
-          if (!url) return;
+          const url = prompt("URL:", "https://"); if (!url) return;
           const start = ta.selectionStart, end = ta.selectionEnd;
           const selected = ta.value.substring(start, end) || "ссылка";
           block.content = ta.value.substring(0, start) + `<a href="${escapeAttr(url)}" target="_blank">${selected}</a>` + ta.value.substring(end);
           ta.value = block.content;
         });
         el.querySelector(".add-bold-btn").addEventListener("click", () => {
-          const start = ta.selectionStart, end = ta.selectionEnd;
-          if (start === end) return;
+          const start = ta.selectionStart, end = ta.selectionEnd; if (start === end) return;
           block.content = ta.value.substring(0, start) + `<strong>${ta.value.substring(start, end)}</strong>` + ta.value.substring(end);
           ta.value = block.content;
         });
         el.querySelector(".add-italic-btn").addEventListener("click", () => {
-          const start = ta.selectionStart, end = ta.selectionEnd;
-          if (start === end) return;
+          const start = ta.selectionStart, end = ta.selectionEnd; if (start === end) return;
           block.content = ta.value.substring(0, start) + `<em>${ta.value.substring(start, end)}</em>` + ta.value.substring(end);
           ta.value = block.content;
         });
@@ -723,23 +677,13 @@
         const urlInput = el.querySelector("input[type='url']");
         const pasteBtn = el.querySelector(".paste-btn");
         const update = (src) => { block.src = src; renderBuilder(); };
-        fileInput.addEventListener("change", e => {
-          const f = e.target.files[0];
-          if (!f) return;
-          const r = new FileReader();
-          r.onload = ev => update(ev.target.result);
-          r.readAsDataURL(f);
-        });
+        fileInput.addEventListener("change", e => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = ev => update(ev.target.result); r.readAsDataURL(f); });
         urlInput.addEventListener("input", () => update(urlInput.value.trim()));
         pasteBtn.addEventListener("click", () => {
           navigator.clipboard.read().then(items => {
             for (const item of items) {
               if (item.types.includes('image/png') || item.types.includes('image/jpeg')) {
-                item.getType(item.types[0]).then(blob => {
-                  const r = new FileReader();
-                  r.onload = ev => update(ev.target.result);
-                  r.readAsDataURL(blob);
-                });
+                item.getType(item.types[0]).then(blob => { const r = new FileReader(); r.onload = ev => update(ev.target.result); r.readAsDataURL(blob); });
                 return;
               }
             }
@@ -749,13 +693,7 @@
         el.addEventListener("paste", e => {
           const items = (e.clipboardData || window.clipboardData).items;
           for (const item of items) {
-            if (item.type.indexOf("image") === 0) {
-              const r = new FileReader();
-              r.onload = ev => update(ev.target.result);
-              r.readAsDataURL(item.getAsFile());
-              e.preventDefault();
-              return;
-            }
+            if (item.type.indexOf("image") === 0) { const r = new FileReader(); r.onload = ev => update(ev.target.result); r.readAsDataURL(item.getAsFile()); e.preventDefault(); return; }
           }
         });
         el.querySelector('[data-move="-1"]').addEventListener("click", () => moveBlock(index, -1));
@@ -774,83 +712,44 @@
   }
 
   settingsBtn.addEventListener("click", () => {
-    // Заполняем баннер
     pendingBanner = bannerUrl;
-    bannerPreview.classList.remove("visible");
-    bannerPreview.src = "";
-    if (pendingBanner) {
-      bannerPreview.src = pendingBanner;
-      bannerPreview.classList.add("visible");
-    }
+    bannerPreview.classList.remove("visible"); bannerPreview.src = "";
+    if (pendingBanner) { bannerPreview.src = pendingBanner; bannerPreview.classList.add("visible"); }
     bannerUrlInput.value = pendingBanner && !pendingBanner.startsWith("data:") ? pendingBanner : "";
-
     renderBuilder();
-    previewFrame.style.display = "none";
-    togglePreviewBtn.textContent = "Показать";
+    previewFrame.style.display = "none"; togglePreviewBtn.textContent = "Показать";
     settingsModal.classList.add("open");
   });
 
   // ---------- Баннер в настройках ----------
   bannerFile.addEventListener("change", e => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const file = e.target.files[0]; if (!file) return;
     if (file.size > 2 * 1024 * 1024) { alert("Максимум 2 МБ."); return; }
     const reader = new FileReader();
-    reader.onload = ev => {
-      pendingBanner = ev.target.result;
-      bannerPreview.src = pendingBanner;
-      bannerPreview.classList.add("visible");
-      bannerUrlInput.value = "";
-    };
+    reader.onload = ev => { pendingBanner = ev.target.result; bannerPreview.src = pendingBanner; bannerPreview.classList.add("visible"); bannerUrlInput.value = ""; };
     reader.readAsDataURL(file);
   });
-
   bannerUrlInput.addEventListener("input", () => {
     const v = bannerUrlInput.value.trim();
-    if (v) {
-      pendingBanner = v;
-      bannerPreview.src = v;
-      bannerPreview.classList.add("visible");
-      bannerFile.value = "";
-    }
+    if (v) { pendingBanner = v; bannerPreview.src = v; bannerPreview.classList.add("visible"); bannerFile.value = ""; }
   });
-
   document.getElementById("pasteBannerBtn").addEventListener("click", () => {
     navigator.clipboard.read().then(items => {
       for (const item of items) {
         if (item.types.includes('image/png') || item.types.includes('image/jpeg')) {
-          item.getType(item.types[0]).then(blob => {
-            const reader = new FileReader();
-            reader.onload = ev => {
-              pendingBanner = ev.target.result;
-              bannerPreview.src = pendingBanner;
-              bannerPreview.classList.add("visible");
-            };
-            reader.readAsDataURL(blob);
-          });
+          item.getType(item.types[0]).then(blob => { const reader = new FileReader(); reader.onload = ev => { pendingBanner = ev.target.result; bannerPreview.src = pendingBanner; bannerPreview.classList.add("visible"); }; reader.readAsDataURL(blob); });
           return;
         }
       }
       alert("В буфере нет картинки.");
     });
   });
-
   document.getElementById("resetBannerBtn").addEventListener("click", () => {
-    pendingBanner = "";
-    bannerPreview.classList.remove("visible");
-    bannerPreview.src = "";
-    bannerUrlInput.value = "";
-    bannerFile.value = "";
+    pendingBanner = ""; bannerPreview.classList.remove("visible"); bannerPreview.src = ""; bannerUrlInput.value = ""; bannerFile.value = "";
   });
 
-  document.getElementById("addTextBlock").addEventListener("click", () => {
-    instructionBlocks.push({ type: "text", content: "" });
-    renderBuilder();
-  });
-  document.getElementById("addImageBlock").addEventListener("click", () => {
-    instructionBlocks.push({ type: "image", src: "" });
-    renderBuilder();
-  });
+  document.getElementById("addTextBlock").addEventListener("click", () => { instructionBlocks.push({ type: "text", content: "" }); renderBuilder(); });
+  document.getElementById("addImageBlock").addEventListener("click", () => { instructionBlocks.push({ type: "image", src: "" }); renderBuilder(); });
 
   togglePreviewBtn.addEventListener("click", () => {
     if (previewFrame.style.display === "none") {
@@ -861,40 +760,24 @@
         return "";
       }).join("");
       togglePreviewBtn.textContent = "Скрыть";
-    } else {
-      previewFrame.style.display = "none";
-      togglePreviewBtn.textContent = "Показать";
-    }
+    } else { previewFrame.style.display = "none"; togglePreviewBtn.textContent = "Показать"; }
   });
 
   document.getElementById("saveSettingsBtn").addEventListener("click", async () => {
-    // Сохраняем баннер на сервер
     try {
       const res = await apiSaveBanner(pendingBanner);
-      if (res.success) {
-        bannerUrl = pendingBanner;
-        renderBanner();
-        alert("Настройки сохранены!");
-        settingsModal.classList.remove("open");
-      } else {
-        alert("Ошибка сохранения баннера.");
-      }
-    } catch (err) {
-      alert("Ошибка сети при сохранении баннера.");
-    }
+      if (res.success) { bannerUrl = pendingBanner; renderBanner(); alert("Настройки сохранены!"); settingsModal.classList.remove("open"); }
+      else { alert("Ошибка сохранения баннера."); }
+    } catch (err) { alert("Ошибка сети при сохранении баннера."); }
   });
 
   // ---------- Редактор игры ----------
   function openEditor(id) {
     const isNew = !id;
     modalTitle.textContent = isNew ? "Добавить игру" : "Редактировать игру";
-    gameForm.reset();
-    pendingCover = "";
-    coverPreview.classList.remove("visible");
-
+    gameForm.reset(); pendingCover = ""; coverPreview.classList.remove("visible");
     if (!isNew) {
-      const g = games.find(x => String(x.id) === String(id));
-      if (!g) return;
+      const g = games.find(x => String(x.id) === String(id)); if (!g) return;
       document.getElementById("fId").value = g.id;
       document.getElementById("fTitle").value = g.title || "";
       document.getElementById("fDesc").value = g.desc || "";
@@ -906,59 +789,81 @@
       document.getElementById("fLinkYandex").value = g.linkYandex || "";
       document.getElementById("fLinkSber").value = g.linkSber || "";
       document.getElementById("fCoverUrl").value = g.cover && !g.cover.startsWith("data:") ? g.cover : "";
-      if (g.cover) {
-        pendingCover = g.cover;
-        coverPreview.src = g.cover;
-        coverPreview.classList.add("visible");
-      }
-    } else {
-      document.getElementById("fId").value = "";
-    }
+      if (g.cover) { pendingCover = g.cover; coverPreview.src = g.cover; coverPreview.classList.add("visible"); }
+    } else { document.getElementById("fId").value = ""; }
     gameModal.classList.add("open");
   }
 
   addBtn.addEventListener("click", () => openEditor(null));
 
+  // ---------- Загрузка обложки игры ----------
   coverFile.addEventListener("change", e => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const file = e.target.files[0]; if (!file) return;
     if (file.size > 2 * 1024 * 1024) { alert("Максимум 2 МБ."); return; }
     const reader = new FileReader();
     reader.onload = ev => { pendingCover = ev.target.result; coverPreview.src = pendingCover; coverPreview.classList.add("visible"); coverUrl.value = ""; };
     reader.readAsDataURL(file);
   });
-
   coverUrl.addEventListener("input", () => {
     const v = coverUrl.value.trim();
     if (v) { pendingCover = v; coverPreview.src = v; coverPreview.classList.add("visible"); coverFile.value = ""; }
   });
-
   document.getElementById("pasteCoverBtn").addEventListener("click", () => {
     navigator.clipboard.read().then(items => {
       for (const item of items) {
         if (item.types.includes('image/png') || item.types.includes('image/jpeg')) {
-          item.getType(item.types[0]).then(blob => {
-            const reader = new FileReader();
-            reader.onload = ev => { pendingCover = ev.target.result; coverPreview.src = pendingCover; coverPreview.classList.add("visible"); };
-            reader.readAsDataURL(blob);
-          });
+          item.getType(item.types[0]).then(blob => { const reader = new FileReader(); reader.onload = ev => { pendingCover = ev.target.result; coverPreview.src = pendingCover; coverPreview.classList.add("visible"); }; reader.readAsDataURL(blob); });
           return;
         }
       }
       alert("В буфере нет картинки.");
     });
   });
-
   gameModal.addEventListener("paste", e => {
     const items = (e.clipboardData || window.clipboardData).items;
     for (const item of items) {
-      if (item.type.indexOf("image") === 0) {
-        const reader = new FileReader();
-        reader.onload = ev => { pendingCover = ev.target.result; coverPreview.src = pendingCover; coverPreview.classList.add("visible"); };
-        reader.readAsDataURL(item.getAsFile());
-        e.preventDefault();
-        return;
-      }
+      if (item.type.indexOf("image") === 0) { const reader = new FileReader(); reader.onload = ev => { pendingCover = ev.target.result; coverPreview.src = pendingCover; coverPreview.classList.add("visible"); }; reader.readAsDataURL(item.getAsFile()); e.preventDefault(); return; }
+    }
+  });
+
+  // ---------- ЗАГРУЗКА ФАЙЛА НА ДИСК ----------
+  document.getElementById("uploadFileBtn").addEventListener("click", async () => {
+    const fileInput = document.getElementById("fFileUpload");
+    const file = fileInput.files[0];
+    if (!file) { alert("Сначала выберите файл в поле ниже."); return; }
+    if (file.size > 50 * 1024 * 1024) { alert("Файл слишком большой для загрузки через GAS (лимит 50 МБ). Загрузите его вручную на Google Диск и вставьте ссылку в поле выше."); return; }
+    
+    const btn = document.getElementById("uploadFileBtn");
+    btn.textContent = "Загрузка..."; btn.disabled = true;
+    
+    try {
+      const reader = new FileReader();
+      const base64 = await new Promise((resolve, reject) => {
+        reader.onload = (e) => resolve(e.target.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      
+      const body = new URLSearchParams();
+      body.append("action", "uploadFile");
+      body.append("login", adminCreds.login);
+      body.append("password", adminCreds.password);
+      body.append("fileName", file.name);
+      body.append("mimeType", file.type || "application/octet-stream");
+      body.append("fileData", base64);
+      
+      const res = await fetch(GAS_URL, { method: "POST", body });
+      const data = await res.json();
+      
+      if (data.success) {
+        document.getElementById("fLink").value = data.url;
+        alert("Файл загружен! Ссылка появилась в поле «Ссылка на скачивание (общая)».");
+      } else { alert("Ошибка загрузки: " + (data.error || "неизвестно")); }
+    } catch (err) {
+      console.error(err);
+      alert("Ошибка при загрузке файла. Проверьте соединение и попробуйте снова.");
+    } finally {
+      btn.textContent = "📤 Загрузить"; btn.disabled = false;
     }
   });
 
@@ -991,17 +896,10 @@
     btn.textContent = "Сохранение..."; btn.disabled = true;
     try {
       const res = await apiSaveGame(data);
-      if (res.success) {
-        gameModal.classList.remove("open");
-        await loadData();
-      } else {
-        alert("Ошибка: " + (res.error || ""));
-      }
-    } catch (err) {
-      alert("Ошибка сети.");
-    } finally {
-      btn.textContent = "Сохранить"; btn.disabled = false;
-    }
+      if (res.success) { gameModal.classList.remove("open"); await loadData(); }
+      else { alert("Ошибка: " + (res.error || "")); }
+    } catch (err) { alert("Ошибка сети."); }
+    finally { btn.textContent = "Сохранить"; btn.disabled = false; }
   });
 
   // ---------- Удаление ----------
@@ -1017,11 +915,7 @@
   // ---------- Фильтр ----------
   searchInput.addEventListener("input", () => {
     const q = searchInput.value.trim().toLowerCase();
-    const filtered = !q ? games : games.filter(g =>
-      g.title.toLowerCase().includes(q) ||
-      (g.desc || "").toLowerCase().includes(q) ||
-      (g.genre || "").toLowerCase().includes(q)
-    );
+    const filtered = !q ? games : games.filter(g => g.title.toLowerCase().includes(q) || (g.desc || "").toLowerCase().includes(q) || (g.genre || "").toLowerCase().includes(q));
     render(filtered);
   });
 
