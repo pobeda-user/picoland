@@ -346,7 +346,7 @@
 
   <!-- FOOTER -->
   <footer>
-    <div>PicoLAND / <span class="accent">v2.2</span> ✦ прототип</div>
+    <div>PicoLAND / <span class="accent">v2.3</span> ✦ прототип</div>
     <div>Показано <span class="accent" id="shown">0</span></div>
   </footer>
 
@@ -472,48 +472,20 @@
 </div>
 
 <script>
-  // ---------- Константы ----------
+  // ============================================================
+  // НАСТРОЙКИ
+  // ============================================================
+  // ВСТАВЬТЕ СЮДА ССЫЛКУ ИЗ GAS (шаг 2)
   const GAS_URL = "https://script.google.com/macros/s/AKfycbxYI9PQLlPc6ZA7WK0XWxf1P15nMRaj0xaNGAauM7ZZxvsXWuWaVzTZmK1DVt-g-bkA/exec";
-  const STORAGE_KEY = "picoland_games_v1";
-  const INSTR_KEY = "picoland_instruction_v2";
-  const AUTH_KEY = "picoland_auth";
-  const USER_REACTIONS_KEY = "picoland_user_reactions";
-
-  // ---------- Дефолтная инструкция ----------
-  const defaultInstructionBlocks = [
-    { type: "text", content: "<h3>УСТАНОВКА ИГР</h3><p><em>Перед установкой рекомендую ознакомиться с ситуацией со сторонними играми на текущий момент.</em></p>" },
-    { type: "text", content: "<p>Обычно небольшие игры состоят из APK файла, подготовленный файл можно просто загрузить в любую папку на гарнитуре, зайти через диспетчер файлов и установить вручную.<br>Большие же игры могут иметь еще папку с OBB файлами (иногда и другие, но суть одна — apk + папка с файлами), эти файлы находятся в архивах rar и zip, для начала нужно распаковать архив любым архиватором.</p>" },
-    { type: "image", src: "" },
-    { type: "text", content: "<p><strong>Вот основные способы установки:</strong></p><p>1. 📹 <a href=\"#\" target=\"_blank\">ВИДЕО ПО УСТАНОВКЕ ИГР И ПРИЛОЖЕНИЙ БЕЗ УЧАСТИЯ ПК</a></p><p>2. Через SideQuest. <em>из плюсов не надо качать на гарнитуру лишние файлы и забивать память, из минусов многие файлы могут быть в черном списке и банально не установится через неё</em></p><p>3. Установка через приложение EZPico. Само все сделает, даже есть функция переподписания, постоянно обновляется и вносятся новые функции. Но нужен ПК на Windows.</p>" }
-  ];
-
-  // ---------- Данные по умолчанию ----------
-  const defaultGames = [
-    {
-      id: 1,
-      title: "Virtual Fighter Maneuvers | OVRreport (c Quest)",
-      date: "28 октября",
-      desc: "Боевой авиасимулятор от создателя VTOL VR с упором на ближний воздушный бой.\nВступайте в динамичные схватки на современных истребителях против ботов или других игроков онлайн.",
-      lang: "Английский",
-      genre: "Симулятор, Экшн",
-      multiplayer: "Мультиплеер НЕ работает",
-      trailer: "https://www.youtube.com/results?search_query=Virtual+Fighter+Maneuvers",
-      link: "",
-      linkYandex: "https://disk.yandex.ru/d/example",
-      linkSber: "https://sberdisk.ru/s/example",
-      cover: "",
-      reactions: { "❤️": 3 }, // Пример с 3 сердечками
-      views: 907, // Просмотры
-      time: "20:19" // Время
-    }
-  ];
 
   // ---------- Состояние ----------
-  let games = loadGames();
-  let instructionBlocks = loadInstruction();
-  let isAdmin = localStorage.getItem(AUTH_KEY) === "1";
+  let games = [];
+  let isAdmin = false;
   let pendingCover = "";
-  let userReactions = loadUserReactions(); // { gameId: "👍" }
+  let userReactions = loadUserReactions(); // локально: { gameId: "emoji" }
+  
+  // Сохранённый логин/пароль для отправки запросов
+  let adminCreds = JSON.parse(localStorage.getItem("picoland_creds") || "{}");
 
   // ---------- DOM ----------
   const grid = document.getElementById("grid");
@@ -521,17 +493,12 @@
   const shown = document.getElementById("shown");
   const searchInput = document.getElementById("searchInput");
   const adminBtn = document.getElementById("adminBtn");
-  const settingsBtn = document.getElementById("settingsBtn");
   const addBtn = document.getElementById("addBtn");
+  const settingsBtn = document.getElementById("settingsBtn"); // Заглушка, если нужно
 
   const loginModal = document.getElementById("loginModal");
   const loginForm = document.getElementById("loginForm");
   const loginError = document.getElementById("loginError");
-
-  const settingsModal = document.getElementById("settingsModal");
-  const builderContainer = document.getElementById("builderContainer");
-  const previewFrame = document.getElementById("previewFrame");
-  const togglePreviewBtn = document.getElementById("togglePreviewBtn");
 
   const gameModal = document.getElementById("gameModal");
   const gameForm = document.getElementById("gameForm");
@@ -546,49 +513,73 @@
   const instructionModal = document.getElementById("instructionModal");
   const instructionContent = document.getElementById("instructionContent");
 
-  // ---------- Хранилище ----------
-  function loadGames() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        return parsed.map(g => ({ ...g, reactions: g.reactions || {}, views: g.views || 0, time: g.time || "00:00" }));
-      }
-    } catch (e) {}
-    return JSON.parse(JSON.stringify(defaultGames));
-  }
-  function saveGames() { localStorage.setItem(STORAGE_KEY, JSON.stringify(games)); }
-
-  function loadInstruction() {
-    try {
-      const raw = localStorage.getItem(INSTR_KEY);
-      if (raw) return JSON.parse(raw);
-    } catch (e) {}
-    return JSON.parse(JSON.stringify(defaultInstructionBlocks));
-  }
-  function saveInstruction() { localStorage.setItem(INSTR_KEY, JSON.stringify(instructionBlocks)); }
-
+  // ---------- Хранилище (локальное для реакций и учётных данных) ----------
   function loadUserReactions() {
     try {
-      const raw = localStorage.getItem(USER_REACTIONS_KEY);
+      const raw = localStorage.getItem("picoland_user_reactions");
       if (raw) return JSON.parse(raw);
     } catch (e) {}
     return {};
   }
-  function saveUserReactions() { localStorage.setItem(USER_REACTIONS_KEY, JSON.stringify(userReactions)); }
+  function saveUserReactions() { localStorage.setItem("picoland_user_reactions", JSON.stringify(userReactions)); }
+
+  // ---------- API ----------
+  async function apiLogin(u, p) {
+    const body = new URLSearchParams();
+    body.append("action", "login");
+    body.append("login", u);
+    body.append("password", p);
+    const res = await fetch(GAS_URL, { method: "POST", body: body });
+    const data = await res.json();
+    return data.success;
+  }
+
+  async function apiGetGames() {
+    const res = await fetch(GAS_URL);
+    if (!res.ok) throw new Error("GAS error");
+    return await res.json();
+  }
+
+  async function apiSaveGame(gameData) {
+    const body = new URLSearchParams();
+    body.append("action", "saveGame");
+    body.append("login", adminCreds.login);
+    body.append("password", adminCreds.password);
+    body.append("gameData", JSON.stringify(gameData));
+    const res = await fetch(GAS_URL, { method: "POST", body: body });
+    return await res.json();
+  }
+
+  async function apiDeleteGame(id) {
+    const body = new URLSearchParams();
+    body.append("action", "deleteGame");
+    body.append("login", adminCreds.login);
+    body.append("password", adminCreds.password);
+    body.append("gameId", id);
+    const res = await fetch(GAS_URL, { method: "POST", body: body });
+    return await res.json();
+  }
+
+  async function apiReact(gameId, emoji, userChoice) {
+    const body = new URLSearchParams();
+    body.append("action", "react");
+    body.append("gameId", gameId);
+    body.append("emoji", emoji);
+    body.append("userChoice", userChoice || "");
+    const res = await fetch(GAS_URL, { method: "POST", body: body });
+    return await res.json();
+  }
 
   // ---------- Аутентификация ----------
-  function updateAdminUI() {
+  async function updateAdminUI() {
     if (isAdmin) {
       adminBtn.textContent = "🚪 Выйти";
       adminBtn.classList.add("logged");
       addBtn.style.display = "inline-flex";
-      settingsBtn.style.display = "inline-flex";
     } else {
       adminBtn.textContent = "🔒 Админ";
       adminBtn.classList.remove("logged");
       addBtn.style.display = "none";
-      settingsBtn.style.display = "none";
     }
     render(games);
   }
@@ -596,7 +587,8 @@
   adminBtn.addEventListener("click", () => {
     if (isAdmin) {
       isAdmin = false;
-      localStorage.removeItem(AUTH_KEY);
+      adminCreds = {};
+      localStorage.removeItem("picoland_creds");
       updateAdminUI();
     } else {
       loginModal.classList.add("open");
@@ -605,17 +597,33 @@
     }
   });
 
-  loginForm.addEventListener("submit", e => {
+  loginForm.addEventListener("submit", async e => {
     e.preventDefault();
     const u = document.getElementById("loginUser").value.trim();
     const p = document.getElementById("loginPass").value;
-    if (u === ADMIN_LOGIN && p === ADMIN_PASS) {
-      isAdmin = true;
-      localStorage.setItem(AUTH_KEY, "1");
-      loginModal.classList.remove("open");
-      updateAdminUI();
-    } else {
-      loginError.classList.add("visible");
+    
+    const btn = loginForm.querySelector(".btn");
+    const originalText = btn.textContent;
+    btn.textContent = "Проверка...";
+    btn.disabled = true;
+
+    try {
+      const success = await apiLogin(u, p);
+      if (success) {
+        isAdmin = true;
+        adminCreds = { login: u, password: p };
+        localStorage.setItem("picoland_creds", JSON.stringify(adminCreds));
+        loginModal.classList.remove("open");
+        updateAdminUI();
+      } else {
+        loginError.classList.add("visible");
+      }
+    } catch (err) {
+      alert("Ошибка сети. Проверьте настройки GAS.");
+      console.error(err);
+    } finally {
+      btn.textContent = originalText;
+      btn.disabled = false;
     }
   });
 
@@ -627,9 +635,20 @@
     m.addEventListener("click", e => { if (e.target === m) m.classList.remove("open"); });
   });
 
-  // ---------- Рендер карточек ----------
+  // ---------- Загрузка игр при старте ----------
+  async function loadGames() {
+    try {
+      games = await apiGetGames();
+      render(games);
+    } catch (err) {
+      console.error("Ошибка загрузки игр:", err);
+      document.getElementById("grid").innerHTML = `<div class="empty"><p>Не удалось загрузить игры. Проверьте настройки.</p></div>`;
+    }
+  }
+
+  // ---------- Рендер ----------
   function render(list) {
-    if (!list.length) {
+    if (!list || !list.length) {
       grid.innerHTML = `<div class="empty"><h3>Игр пока нет</h3><p>${isAdmin ? "Нажми «+ Добавить», чтобы добавить первую." : "Зайди в админку, чтобы добавить игры."}</p></div>`;
     } else {
       grid.innerHTML = list.map(g => `
@@ -678,30 +697,25 @@
         btn.addEventListener("click", e => { e.stopPropagation(); deleteGame(Number(btn.dataset.delete)); });
       });
     }
-    counter.textContent = `(${list.length})`;
-    shown.textContent = list.length;
+    counter.textContent = `(${list ? list.length : 0})`;
+    shown.textContent = list ? list.length : 0;
   }
 
   // ---------- Просмотр игры ----------
   function openView(id) {
-    const g = games.find(x => x.id === id);
+    const g = games.find(x => String(x.id) === String(id));
     if (!g) return;
 
     const genresHtml = (g.genre || "").split(",").map(t => t.trim()).filter(Boolean).map(t => `#${escapeHtml(t)}`).join(" ");
     const userChoice = userReactions[id] || null;
 
-    // Список доступных реакций
     const reactionEmojis = ['👍', '❤️', '🔥', '😂', '😮', '😢'];
     
-    // Генерируем HTML для кнопок реакций
     let reactionsHtml = '';
-    
     if (userChoice) {
-      // Если пользователь уже выбрал реакцию, показываем ТОЛЬКО её
       const count = g.reactions && g.reactions[userChoice] ? g.reactions[userChoice] : 1;
       reactionsHtml = `<button class="reaction-btn active" data-emoji="${userChoice}">${userChoice} <span class="count">${count}</span></button>`;
     } else {
-      // Если реакции нет, показываем все доступные кнопки
       reactionsHtml = reactionEmojis.map(emoji => {
         const count = g.reactions && g.reactions[emoji] ? g.reactions[emoji] : 0;
         const countHtml = count > 0 ? `<span class="count">${count}</span>` : '';
@@ -709,7 +723,6 @@
       }).join('');
     }
 
-    // Футер с просмотрами и временем
     const viewsHtml = `<span class="views">👁 ${g.views || 0}</span>`;
     const timeHtml = `<span>${g.time || '00:00'}</span>`;
 
@@ -723,7 +736,6 @@
         ${genresHtml ? `<strong>Жанр:</strong> ${genresHtml}` : ""}
       </div>
       <div class="tg-view__links">
-        <!-- КНОПКИ СКАЧИВАНИЯ В ПРОСМОТРЕ -->
         ${g.link ? `<a href="${escapeAttr(g.link)}" target="_blank">⬇ СКАЧАТЬ</a>` : ""}
         ${g.linkYandex ? `<a href="${escapeAttr(g.linkYandex)}" target="_blank" style="color: #fc3f1d;">⬇ СКАЧАТЬ ЯНДЕКС</a>` : ""}
         ${g.linkSber ? `<a href="${escapeAttr(g.linkSber)}" target="_blank" style="color: #21a038;">⬇ СКАЧАТЬ SBER</a>` : ""}
@@ -733,14 +745,12 @@
       </div>
       <div style="font-size: 0.9rem; color: #333; margin-bottom: 12px;">Приятной игры!</div>
       
-      <!-- СЕКЦИЯ РЕАКЦИЙ -->
       <div class="tg-reactions">
         <div class="tg-reactions__list">
           ${reactionsHtml}
         </div>
       </div>
       
-      <!-- ФУТЕР С ПРОСМОТРАМИ И ВРЕМЕНЕМ -->
       <div class="tg-footer-meta">
         ${viewsHtml}
         ${timeHtml}
@@ -749,288 +759,59 @@
     
     viewModal.classList.add("open");
 
-    // Обработчик клика по инструкции
     viewContent.querySelector(".open-instruction").addEventListener("click", e => {
       e.preventDefault();
       openInstruction();
     });
 
-    // Обработчики для реакций
     viewContent.querySelectorAll('.reaction-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         const emoji = btn.dataset.emoji;
         const currentUserChoice = userReactions[id];
-
-        // Если игрок уже поставил эту же реакцию — отменяем
+        
+        // Локально обновляем выбор
         if (currentUserChoice === emoji) {
           delete userReactions[id];
-          if (g.reactions[emoji] && g.reactions[emoji] > 0) {
-            g.reactions[emoji]--;
-            if (g.reactions[emoji] === 0) delete g.reactions[emoji];
-          }
-        } 
-        // Если игрок ставит другую реакцию — заменяем
-        else {
-          if (currentUserChoice) {
-            if (g.reactions[currentUserChoice] && g.reactions[currentUserChoice] > 0) {
-              g.reactions[currentUserChoice]--;
-              if (g.reactions[currentUserChoice] === 0) delete g.reactions[currentUserChoice];
-            }
-          }
+        } else {
           userReactions[id] = emoji;
-          g.reactions[emoji] = (g.reactions[emoji] || 0) + 1;
         }
-
-        // Сохраняем
-        saveGames();
         saveUserReactions();
 
-        // Перерисовываем модалку
-        openView(id);
+        // Отправляем на сервер
+        try {
+          const res = await apiReact(id, emoji, currentUserChoice);
+          if (res.success) {
+            g.reactions = res.reactions;
+            openView(id); // Перерисовка
+          }
+        } catch (err) {
+          console.error("Ошибка реакции:", err);
+          alert("Не удалось сохранить реакцию. Проверьте соединение.");
+        }
       });
     });
   }
 
-  // ---------- Инструкция (Рендер) ----------
+  // ---------- Инструкция (заглушка, пока хранится локально) ----------
   function openInstruction() {
-    instructionContent.innerHTML = instructionBlocks.map(block => {
-      if (block.type === "text") return block.content;
-      if (block.type === "image") return block.src ? `<img src="${escapeAttr(block.src)}" alt="Скриншот" onerror="this.style.display='none'">` : "";
-      return "";
-    }).join("");
+    const defaultInstruction = `
+      <h3>УСТАНОВКА ИГР</h3>
+      <p><em>Перед установкой рекомендую ознакомиться с ситуацией со сторонними играми на текущий момент.</em></p>
+      <p>Обычно небольшие игры состоят из APK файла, подготовленный файл можно просто загрузить в любую папку на гарнитуре, зайти через диспетчер файлов и установить вручную.<br>
+      Большие же игры могут иметь еще папку с OBB файлами (иногда и другие, но суть одна — apk + папка с файлами), эти файлы находятся в архивах rar и zip, для начала нужно распаковать архив любым архиватором.</p>
+      <p><strong>Вот основные способы установки:</strong></p>
+      <p>1. 📹 <a href="#" target="_blank">ВИДЕО ПО УСТАНОВКЕ ИГР И ПРИЛОЖЕНИЙ БЕЗ УЧАСТИЯ ПК</a></p>
+      <p>2. Через SideQuest. <em>из плюсов не надо качать на гарнитуру лишние файлы и забивать память, из минусов многие файлы могут быть в черном списке и банально не установится через неё</em></p>
+      <p>3. Установка через приложение EZPico. Само все сделает, даже есть функция переподписания, постоянно обновляется и вносятся новые функции. Но нужен ПК на Windows.</p>
+    `;
+    // В будущем можно брать из GAS
+    instructionContent.innerHTML = defaultInstruction;
     instructionModal.classList.add("open");
   }
 
-  // ---------- Визуальный конструктор (Настройки) ----------
-  function renderBuilder() {
-    builderContainer.innerHTML = "";
-    if (!instructionBlocks.length) {
-      builderContainer.innerHTML = `<div style="color: var(--text-dim); font-size: 0.9rem;">Пока нет блоков. Добавьте текст или картинку.</div>`;
-      return;
-    }
-
-    instructionBlocks.forEach((block, index) => {
-      const el = document.createElement("div");
-      el.className = "builder-block";
-
-      if (block.type === "text") {
-        el.innerHTML = `
-          <div class="builder-block__header">
-            <span class="builder-block__type">Текст</span>
-            <div class="builder-block__controls">
-              <button type="button" data-move="-1" ${index === 0 ? "disabled" : ""} title="Вверх">↑</button>
-              <button type="button" data-move="1" ${index === instructionBlocks.length - 1 ? "disabled" : ""} title="Вниз">↓</button>
-              <button type="button" class="del" title="Удалить">&times;</button>
-            </div>
-          </div>
-          <textarea placeholder="Введите текст...">${escapeHtml(block.content)}</textarea>
-          <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
-            <button type="button" class="btn btn--small btn--ghost add-link-btn">🔗 Вставить ссылку</button>
-            <button type="button" class="btn btn--small btn--ghost add-bold-btn">Ж</button>
-            <button type="button" class="btn btn--small btn--ghost add-italic-btn">К</button>
-          </div>
-        `;
-
-        const ta = el.querySelector("textarea");
-        ta.addEventListener("input", () => { block.content = ta.value; });
-
-        el.querySelector(".add-link-btn").addEventListener("click", () => {
-          const url = prompt("Введите URL ссылки:", "https://");
-          if (!url) return;
-          const start = ta.selectionStart;
-          const end = ta.selectionEnd;
-          const selectedText = ta.value.substring(start, end) || "ссылка";
-          const linkHTML = `<a href="${escapeAttr(url)}" target="_blank">${selectedText}</a>`;
-          block.content = ta.value.substring(0, start) + linkHTML + ta.value.substring(end);
-          ta.value = block.content;
-          ta.focus();
-          ta.setSelectionRange(start + linkHTML.length, start + linkHTML.length);
-        });
-
-        el.querySelector(".add-bold-btn").addEventListener("click", () => {
-          const start = ta.selectionStart;
-          const end = ta.selectionEnd;
-          if (start === end) return;
-          const text = ta.value.substring(start, end);
-          const html = `<strong>${text}</strong>`;
-          block.content = ta.value.substring(0, start) + html + ta.value.substring(end);
-          ta.value = block.content;
-        });
-
-        el.querySelector(".add-italic-btn").addEventListener("click", () => {
-          const start = ta.selectionStart;
-          const end = ta.selectionEnd;
-          if (start === end) return;
-          const text = ta.value.substring(start, end);
-          const html = `<em>${text}</em>`;
-          block.content = ta.value.substring(0, start) + html + ta.value.substring(end);
-          ta.value = block.content;
-        });
-
-        el.querySelector('[data-move="-1"]').addEventListener("click", () => moveBlock(index, -1));
-        el.querySelector('[data-move="1"]').addEventListener("click", () => moveBlock(index, 1));
-        el.querySelector(".del").addEventListener("click", () => { instructionBlocks.splice(index, 1); renderBuilder(); });
-
-      } else if (block.type === "image") {
-        el.innerHTML = `
-          <div class="builder-block__header">
-            <span class="builder-block__type">Картинка</span>
-            <div class="builder-block__controls">
-              <button type="button" data-move="-1" ${index === 0 ? "disabled" : ""} title="Вверх">↑</button>
-              <button type="button" data-move="1" ${index === instructionBlocks.length - 1 ? "disabled" : ""} title="Вниз">↓</button>
-              <button type="button" class="del" title="Удалить">&times;</button>
-            </div>
-          </div>
-          ${block.src ? `<img class="builder-block__img-preview" src="${escapeAttr(block.src)}" alt="Превью">` : `<div class="builder-block__no-img">Нет картинки</div>`}
-          <div class="builder-block__file-row">
-             <input type="file" accept="image/*" style="flex: 1;">
-             <button type="button" class="btn btn--small btn--ghost paste-btn" title="Вставить из буфера (Ctrl+V)">📋 Вставить</button>
-          </div>
-          <input type="url" placeholder="...или URL картинки" value="${block.src && !block.src.startsWith('data:') ? escapeAttr(block.src) : ''}">
-        `;
-
-        const urlInput = el.querySelector("input[type='url']");
-        const fileInput = el.querySelector("input[type='file']");
-        const pasteBtn = el.querySelector(".paste-btn");
-
-        urlInput.addEventListener("input", () => {
-          block.src = urlInput.value.trim();
-          updateImagePreview(el, block.src);
-        });
-
-        fileInput.addEventListener("change", e => {
-          const file = e.target.files[0];
-          if (!file) return;
-          handleImageFile(file, (dataUrl) => {
-            block.src = dataUrl;
-            renderBuilder();
-          });
-        });
-
-        pasteBtn.addEventListener("click", () => {
-          navigator.clipboard.read().then(items => {
-            for (const item of items) {
-              if (item.types.includes('image/png') || item.types.includes('image/jpeg')) {
-                item.getType(item.types[0]).then(blob => {
-                  const reader = new FileReader();
-                  reader.onload = ev => {
-                    block.src = ev.target.result;
-                    renderBuilder();
-                  };
-                  reader.readAsDataURL(blob);
-                });
-                return;
-              }
-            }
-            alert("В буфере обмена нет картинки.");
-          }).catch(err => {
-            alert("Не удалось прочитать буфер обмена. Используйте Ctrl+V прямо в блоке или загрузите файл.");
-          });
-        });
-
-        el.addEventListener("paste", e => {
-          const items = (e.clipboardData || window.clipboardData).items;
-          for (const item of items) {
-            if (item.type.indexOf("image") === 0) {
-              const blob = item.getAsFile();
-              const reader = new FileReader();
-              reader.onload = ev => {
-                block.src = ev.target.result;
-                renderBuilder();
-              };
-              reader.readAsDataURL(blob);
-              e.preventDefault();
-              return;
-            }
-          }
-        });
-
-        el.querySelector('[data-move="-1"]').addEventListener("click", () => moveBlock(index, -1));
-        el.querySelector('[data-move="1"]').addEventListener("click", () => moveBlock(index, 1));
-        el.querySelector(".del").addEventListener("click", () => { instructionBlocks.splice(index, 1); renderBuilder(); });
-      }
-
-      builderContainer.appendChild(el);
-    });
-  }
-
-  function updateImagePreview(container, src) {
-    let img = container.querySelector(".builder-block__img-preview");
-    let noImg = container.querySelector(".builder-block__no-img");
-    if (src) {
-      if (!img) {
-        img = document.createElement("img");
-        img.className = "builder-block__img-preview";
-        if (noImg) noImg.replaceWith(img);
-        else container.insertBefore(img, container.querySelector(".builder-block__file-row"));
-      }
-      img.src = src;
-    } else {
-      if (img) {
-        const placeholder = document.createElement("div");
-        placeholder.className = "builder-block__no-img";
-        placeholder.textContent = "Нет картинки";
-        img.replaceWith(placeholder);
-      }
-    }
-  }
-
-  function handleImageFile(file, callback) {
-    if (file.size > 2 * 1024 * 1024) {
-      alert("Файл слишком большой. Выберите до 2 МБ.");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = ev => callback(ev.target.result);
-    reader.readAsDataURL(file);
-  }
-
-  function moveBlock(index, dir) {
-    const newIndex = index + dir;
-    if (newIndex < 0 || newIndex >= instructionBlocks.length) return;
-    const temp = instructionBlocks[index];
-    instructionBlocks[index] = instructionBlocks[newIndex];
-    instructionBlocks[newIndex] = temp;
-    renderBuilder();
-  }
-
+  // ---------- Заглушка для кнопки настроек (если нужна) ----------
   settingsBtn.addEventListener("click", () => {
-    renderBuilder();
-    previewFrame.style.display = "none";
-    togglePreviewBtn.textContent = "Показать";
-    settingsModal.classList.add("open");
-  });
-
-  document.getElementById("addTextBlock").addEventListener("click", () => {
-    instructionBlocks.push({ type: "text", content: "" });
-    renderBuilder();
-  });
-
-  document.getElementById("addImageBlock").addEventListener("click", () => {
-    instructionBlocks.push({ type: "image", src: "" });
-    renderBuilder();
-  });
-
-  // ---------- Предпросмотр ----------
-  togglePreviewBtn.addEventListener("click", () => {
-    if (previewFrame.style.display === "none") {
-      previewFrame.style.display = "block";
-      previewFrame.innerHTML = instructionBlocks.map(block => {
-        if (block.type === "text") return block.content;
-        if (block.type === "image") return block.src ? `<img src="${escapeAttr(block.src)}" alt="Скриншот" onerror="this.style.display='none'">` : "";
-        return "";
-      }).join("");
-      togglePreviewBtn.textContent = "Скрыть";
-    } else {
-      previewFrame.style.display = "none";
-      togglePreviewBtn.textContent = "Показать";
-    }
-  });
-
-  document.getElementById("saveSettingsBtn").addEventListener("click", () => {
-    saveInstruction();
-    settingsModal.classList.remove("open");
-    alert("Инструкция сохранена!");
+    alert("Настройки инструкции пока в разработке. Скоро будут доступны.");
   });
 
   // ---------- Фильтр ----------
@@ -1054,7 +835,7 @@
     coverPreview.src = "";
 
     if (!isNew) {
-      const g = games.find(x => x.id === id);
+      const g = games.find(x => String(x.id) === String(id));
       if (!g) return;
       document.getElementById("fId").value = g.id;
       document.getElementById("fTitle").value = g.title || "";
@@ -1081,16 +862,14 @@
 
   addBtn.addEventListener("click", () => openEditor(null));
 
-  // ---------- Загрузка обложки игры ----------
+  // ---------- Загрузка обложки ----------
   coverFile.addEventListener("change", e => {
     const file = e.target.files[0];
     if (!file) return;
-    handleImageFile(file, (dataUrl) => {
-      pendingCover = dataUrl;
-      coverPreview.src = pendingCover;
-      coverPreview.classList.add("visible");
-      coverUrl.value = "";
-    });
+    if (file.size > 2 * 1024 * 1024) { alert("Файл слишком большой. Выберите до 2 МБ."); coverFile.value = ""; return; }
+    const reader = new FileReader();
+    reader.onload = ev => { pendingCover = ev.target.result; coverPreview.src = pendingCover; coverPreview.classList.add("visible"); coverUrl.value = ""; };
+    reader.readAsDataURL(file);
   });
 
   coverUrl.addEventListener("input", () => {
@@ -1143,10 +922,15 @@
   });
 
   // ---------- Сохранение игры ----------
-  gameForm.addEventListener("submit", e => {
+  gameForm.addEventListener("submit", async e => {
     e.preventDefault();
     const id = document.getElementById("fId").value;
+    
+    // Находим существующую игру, чтобы сохранить просмотры и реакции
+    const existing = id ? games.find(x => String(x.id) === String(id)) : null;
+    
     const data = {
+      id: id || null,
       title: document.getElementById("fTitle").value.trim(),
       date: document.getElementById("fDate").value.trim(),
       desc: document.getElementById("fDesc").value.trim(),
@@ -1158,29 +942,47 @@
       linkYandex: document.getElementById("fLinkYandex").value.trim(),
       linkSber: document.getElementById("fLinkSber").value.trim(),
       cover: pendingCover,
+      reactions: existing ? existing.reactions : {},
+      views: existing ? existing.views : 0,
+      time: existing ? existing.time : "00:00"
     };
-    if (id) {
-      const idx = games.findIndex(g => g.id === Number(id));
-      if (idx > -1) {
-        // Сохраняем существующие реакции и просмотры при редактировании
-        const existingReactions = games[idx].reactions || {};
-        const existingViews = games[idx].views || 0;
-        games[idx] = { ...games[idx], ...data, reactions: existingReactions, views: existingViews };
+    
+    const btn = document.getElementById("saveBtn");
+    const originalText = btn.textContent;
+    btn.textContent = "Сохранение...";
+    btn.disabled = true;
+
+    try {
+      const res = await apiSaveGame(data);
+      if (res.success) {
+        gameModal.classList.remove("open");
+        await loadGames(); // Перезагружаем список с сервера
+      } else {
+        alert("Ошибка сохранения: " + (res.error || "неизвестно"));
       }
-    } else {
-      games.unshift({ id: Date.now(), reactions: {}, views: 0, time: "00:00", ...data });
+    } catch (err) {
+      alert("Ошибка сети при сохранении.");
+      console.error(err);
+    } finally {
+      btn.textContent = originalText;
+      btn.disabled = false;
     }
-    saveGames();
-    render(games);
-    gameModal.classList.remove("open");
   });
 
   // ---------- Удаление ----------
-  function deleteGame(id) {
+  async function deleteGame(id) {
     if (!confirm("Удалить эту игру?")) return;
-    games = games.filter(g => g.id !== id);
-    saveGames();
-    render(games);
+    try {
+      const res = await apiDeleteGame(id);
+      if (res.success) {
+        await loadGames();
+      } else {
+        alert("Ошибка удаления: " + (res.error || "неизвестно"));
+      }
+    } catch (err) {
+      alert("Ошибка сети при удалении.");
+      console.error(err);
+    }
   }
 
   // ---------- Эскейп ----------
@@ -1190,7 +992,14 @@
   function escapeAttr(s) { return escapeHtml(s); }
 
   // ---------- Старт ----------
-  updateAdminUI();
+  // Проверяем сохранённые креды
+  if (adminCreds.login && adminCreds.password) {
+    // Можно было бы проверить валидность, но для простоты просто восстанавливаем сессию
+    isAdmin = true;
+  }
+  
+  // Загружаем данные с сервера
+  loadGames().then(() => updateAdminUI());
 </script>
 </body>
 </html>
